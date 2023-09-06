@@ -1,0 +1,15 @@
+<launch>
+  <arg name="event_topic" default='/dvs/events'/>
+  <arg name="camera_size" default='240x180'/>
+  <arg name="camera_calib" default='/root/src/haste/dataset/calib.txt'/>
+  <arg name="seed" default='0.6,125.0,52.0,0.0,0'/>
+
+  <!-- tracker -->
+  <node name="haste_ros" pkg="haste_ros" type="haste_ros"  output="screen">
+    <remap from="events" to="$(arg event_topic)" />
+    <param name="camerasize" value="$(arg camera_size)" />
+    <param name="calib_file" value="$(arg camera_calib)" />
+    <param name="seed_data" value="$(arg seed)" />
+  </node>
+
+</launch>

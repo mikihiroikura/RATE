@@ -1,0 +1,39 @@
+<launch>
+  <arg name="event_topic" default='/dvs/events'/>
+  <arg name="camera_size" default='240x180'/>
+  <arg name="camera_calib" default='/root/src/haste/dataset/calib.txt'/>
+  <arg name="seed" default='0.6,125.0,52.0,0.0,0'/>
+  <arg name="seed_file" default='/app/rosbag/scaramuzza_lab/shapes_rotation_corner_classification.txt'/>
+
+  <!-- tracker -->
+  <node name="haste_ros" pkg="haste_ros" type="haste_ros"  output="screen">
+    <remap from="events" to="$(arg event_topic)" />
+    <param name="camerasize" value="$(arg camera_size)" />
+    <param name="calib_file" value="$(arg camera_calib)" />
+    <param name="seed_data" value="$(arg seed)" />
+  </node>
+
+  <!-- gen_seeds -->
+  <node name="gen_seeds" pkg="gen_seeds" type="gen_seeds" output="screen">
+    <param name="seed_txt" value="$(arg seed_file)" />
+  </node>
+
+  <!-- visualization events -->
+  <node name="dvs_renderer_events" pkg="dvs_renderer" type="dvs_renderer">
+    <param name="display_method" value="red-blue"/>
+    <remap from="events" to="$(arg event_topic)" />
+    <remap from="image" to="/dvs/image_raw" />
+    <remap from="camera_info" to="/dvs/camera_info" />
+    <remap from="dvs_rendering" to="dvs_rendering_events" />
+  </node>
+
+  <!-- tracking result renderer -->
+  <node name="tracking_renderer" pkg="tracking_renderer" type="tracking_renderer">
+  </node>
+
+  <!-- image view -->
+  <node name="image_view_events" pkg="image_view" type="image_view">
+    <remap from="image" to="tracking_renderer"/>
+  </node>
+
+</launch>

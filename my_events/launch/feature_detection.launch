@@ -1,0 +1,14 @@
+<launch>
+    <node name="ev_feature_detection" pkg="my_events" type="ev_feature_detection" output="screen">
+        <param name="fx" type="double"   value="200" />
+        <param name="fy" type="double"   value="200" />
+        <param name="cx" type="double"   value="173" />
+        <param name="cy" type="double"   value="120" />
+        <param name="p1" type="double"   value="0.0" />
+        <param name="p2" type="double"   value="0.0" />
+        <param name="k1" type="double"   value="0.0" />
+        <param name="k2" type="double"   value="0.0" />
+        <param name="k3" type="double"   value="0.0" />
+        <param name="filter_thr" type="double"   value="0.005" />
+    </node>
+</launch>

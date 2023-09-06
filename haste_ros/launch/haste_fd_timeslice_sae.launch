@@ -1,0 +1,48 @@
+<launch>
+  <arg name="event_topic" default='/dvs/events'/>
+  <arg name="camera_size" default='240x180'/>
+  <arg name="camera_calib" default='/root/src/haste/dataset/calib.txt'/>
+  <arg name="seed" default='0.6,125.0,52.0,0.0,0'/>
+
+  <!-- feature detection with time slice of SAE -->
+  <node name="ev_feature_detection" pkg="my_events" type="ev_feature_detection" output="screen">
+    <param name="fx" type="double"   value="200" />
+    <param name="fy" type="double"   value="200" />
+    <param name="cx" type="double"   value="173" />
+    <param name="cy" type="double"   value="120" />
+    <param name="p1" type="double"   value="0.0" />
+    <param name="p2" type="double"   value="0.0" />
+    <param name="k1" type="double"   value="0.0" />
+    <param name="k2" type="double"   value="0.0" />
+    <param name="k3" type="double"   value="0.0" />
+    <param name="filter_thr" type="double"   value="0.005" />
+  </node>
+
+  <!-- tracker -->
+  <node name="haste_ros" pkg="haste_ros" type="haste_ros"  output="screen">
+    <remap from="events" to="$(arg event_topic)" />
+    <remap from="seeds" to="/ev_feature_detection/seeds" />
+    <param name="camerasize" value="$(arg camera_size)" />
+    <param name="calib_file" value="$(arg camera_calib)" />
+    <param name="seed_data" value="$(arg seed)" />
+  </node>
+
+  <!-- visualization events -->
+  <node name="dvs_renderer_events" pkg="dvs_renderer" type="dvs_renderer">
+    <param name="display_method" value="red-blue"/>
+    <remap from="events" to="$(arg event_topic)" />
+    <remap from="image" to="/dvs/image_raw" />
+    <remap from="camera_info" to="/dvs/camera_info" />
+    <remap from="dvs_rendering" to="dvs_rendering_events" />
+  </node>
+
+  <!-- tracking result renderer -->
+  <node name="tracking_renderer" pkg="tracking_renderer" type="tracking_renderer">
+  </node>
+
+  <!-- image view -->
+  <node name="image_view_events" pkg="image_view" type="image_view">
+    <remap from="image" to="tracking_renderer"/>
+  </node>
+
+</launch>
