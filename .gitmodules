@@ -1,0 +1,3 @@
+[submodule "event_array_msgs"]
+	path = event_array_msgs
+	url = git@github.com:mikihiroikura/event_array_msgs.git
