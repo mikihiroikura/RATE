@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  rate:
+    image: rate:latest
+    privileged: true
+    network_mode: host
+    container_name: rate
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /home/m-ikura/Github/SilkyEvCam/rosbag/:/app/rosbag
+    command: sleep infinity
