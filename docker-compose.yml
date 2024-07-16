@@ -1,6 +1,9 @@
 version: '3.8'
 services:
   rate:
+    build:
+        context: .
+        dockerfile: ./Dockerfile
     image: rate:latest
     privileged: true
     network_mode: host
