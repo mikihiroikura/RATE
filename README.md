@@ -1,4 +1,4 @@
-# Harris corner detector with Time slice of events + HASTE tracker (HASTE: multi-Hypothesis Asynchronous Speeded-up Tracking of Events, [BMVC'20] by Alzugaray & Chli.)
+# RATE: Real-time Asynchronous Feature Tracking with Event Cameras
 
 This repo is for event-based continuous corner detection and tracking.
 
