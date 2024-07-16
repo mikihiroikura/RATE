@@ -30,6 +30,10 @@ docker build -t rate:latest .
 ```
 docker run -it --privileged --net=host --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v /path_to_rosbag_data_in_host/:/app/rosbag --name rate rate:latest
 ```
+or
+```
+docker compose up -d
+```
 - Mount a directory where rosbag files are saved 
 ### Build catkin_ws (in docker terminal)
 ```
