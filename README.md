@@ -1,6 +1,8 @@
-# Harris corner detector with Time slice of events + HASTE tracker (HASTE: multi-Hypothesis Asynchronous Speeded-up Tracking of Events, [BMVC'20] by Alzugaray & Chli.)
+# RATE: Real-time Asynchronous Feature Tracking with Event Cameras
 
-This repo is for event-based continuous corner detection and tracking.
+This repo is for event-based continuous corner detection and tracking described in the following paper:
+
+Mikihiro Ikura, Cedric Le Gentil, Marcus G. Müller, Florian Schuler, Atsushi Yamashita and Wolfgang Stürzl: "RATE: Real-time Asynchronous Feature Tracking with Event Cameras", Proceedings of the 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS2024), Abu Dhabi (UAE), October 2024.
 
 ## ros packages lists
 - event_array_msgs
@@ -21,53 +23,39 @@ This repo is for event-based continuous corner detection and tracking.
 - libcaer
 
 ## Before starting to run
-Download docker image
+### Build docker image
+```
+docker build -t rate:latest .
+```
 
-!!! Currently, this docker image is private in Dockerhub. If you want to pull this image, please let me know and I will change this repository from private to public as soon as possible. !!!
+### Run docker container
 ```
-docker pull mikihiroikura/continuous_haste:latest
+docker run -it --privileged --net=host --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v /path_to_rosbag_data_in_host/:/app/rosbag --name rate rate:latest
 ```
-<!-- Install libraries
+or
 ```
-sudo apt-get install libcaer-dev
-``` -->
-<!-- Initialize catkin_ws
+docker compose up -d
+docker exec -it rate /bin/bash
 ```
-cd ~/
-mkdir --parents catkin_ws/src
-cd catkin_ws
-``` -->
-Run docker container
-```
-docker run -it --privileged --net=host --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v /path_to_rosbag_data_in_host/:/app/rosbag --name haste-run mikihiroikura/continuous_haste:latest
-```
-Build catkin_ws (in docker terminal)
+- Mount a directory where rosbag files are saved 
+### Build catkin_ws (in docker terminal)
 ```
 cd ~/catkin_ws
-catkin build
+catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
+source devel/setup.bash
 ```
-Open X server (host in new terminal)
+### Open X server (host in new terminal)
 ```
-xhost local:
+xhost local:docker
 ```
-## How to run continuous detection and tracking
+## How to run RATE, continuous feature detection and tracking with event rosbag data
 1st terminal (in docker container)
 ```
 roslaunch haste_ros haste_fd_timeslice_sae.launch event_topic:=/dvs/events camera_size:=240x180 camera_calib:=/root/src/haste/dataset/calib.txt
 ```
-2nd terminal (in host)
+2nd terminal (in host if you have ros environment locally/ otherwise in docker container)
 ```
 rosbag play boxes_6dof.bag
 ```
 - Use rosbag file from scaramuzza's dataset (https://rpg.ifi.uzh.ch/davis_data.html)
 - Resolution of event camera in this dataset is 240x180.
-
-## How to run haste with seed.txt
-1st terminal (in docker container)
-```
-roslaunch haste_ros haste_with_gen_seeds.launch camera_calib:=/path_to_haste_ros/haste/dataset/calib.txt camera_size:=240x180 event_topic:=/dvs/events seed_file:=/path_to_gen_seed/seed/shapes_rotation_corner_classification.txt
-```
-2nd terminal (in host)
-```
-rosbag play shapes_rotation.bag 
-```

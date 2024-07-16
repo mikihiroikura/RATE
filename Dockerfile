@@ -4,21 +4,10 @@ ENV DISPLAY host.docker.internal:0.0
 ## python-catkin-tools
 #### ROS setup ####
 RUN mkdir -p ~/catkin_ws/src && \
-    cd ~/catkin_ws/src && \
-    # /bin/bash -c "source /opt/ros/melodic/setup.bash; catkin_init_workspace" && \
-    cd ~/catkin_ws
-    # && \
-    # catkin build
-    # && \
-    # source devel/setup.bash && \
-    # # /bin/bash -c "source /opt/ros/melodic/setup.bash; catkin_make" && \
-    # echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc && \
-	# echo "source /home/root/catkin_ws/devel/setup.bash" >> ~/.bashrc && \
-	# echo "export ROS_PACKAGE_PATH=\${ROS_PACKAGE_PATH}:/home/root/catkin_ws" >> ~/.bashrc && \
-	# echo "export ROS_WORKSPACE=/home/root/catkin_ws" >> ~/.bashrc
+    echo "source /opt/ros/melodic/setup.bash" >> /root/.bashrc
 
 #### Install dependencies ####
-RUN apt-get install -y python-catkin-tools
+RUN apt-get update && apt-get install -y python-catkin-tools
 # catkin_simple
 RUN cd ~/catkin_ws/src && \
     git clone https://github.com/catkin/catkin_simple.git
