@@ -35,6 +35,7 @@ docker run -it --privileged --net=host --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-uni
 or
 ```
 docker compose up -d
+docker exec -it rate /bin/bash
 ```
 - Mount a directory where rosbag files are saved 
 ### Build catkin_ws (in docker terminal)
@@ -45,14 +46,14 @@ source devel/setup.bash
 ```
 ### Open X server (host in new terminal)
 ```
-xhost local:
+xhost local:docker
 ```
 ## How to run RATE, continuous feature detection and tracking with event rosbag data
 1st terminal (in docker container)
 ```
 roslaunch haste_ros haste_fd_timeslice_sae.launch event_topic:=/dvs/events camera_size:=240x180 camera_calib:=/root/src/haste/dataset/calib.txt
 ```
-2nd terminal (in host)
+2nd terminal (in host if you have ros environment locally/ otherwise in docker container)
 ```
 rosbag play boxes_6dof.bag
 ```
