@@ -1,6 +1,6 @@
 [submodule "event_array_msgs"]
 	path = event_array_msgs
-	url = git@github.com:mikihiroikura/event_array_msgs.git
+	url = git@github.com:ros-event-camera/event_camera_msgs.git
 [submodule "rpg_dvs_ros"]
 	path = rpg_dvs_ros
 	url = git@github.com:uzh-rpg/rpg_dvs_ros.git
