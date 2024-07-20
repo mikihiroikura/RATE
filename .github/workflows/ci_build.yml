@@ -8,8 +8,7 @@ on:
       - master
 
 jobs:
-  build:
-    name: rate-docker-build
+  rate-docker-build:
     runs-on: ubuntu-latest
     steps:
 
