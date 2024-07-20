@@ -51,7 +51,7 @@ xhost local:docker
 ## How to run RATE, continuous feature detection and tracking with event rosbag data
 1st terminal (in docker container)
 ```
-roslaunch haste_ros haste_fd_timeslice_sae.launch event_topic:=/dvs/events camera_size:=240x180 camera_calib:=/root/src/haste/dataset/calib.txt
+roslaunch haste_ros haste_fd_timeslice_sae.launch event_topic:=/dvs/events camera_size:=240x180 camera_calib:=/root/catkin_ws/src/haste_ros/haste/dataset/calib.txt
 ```
 2nd terminal (in host if you have ros environment locally/ otherwise in docker container)
 ```
