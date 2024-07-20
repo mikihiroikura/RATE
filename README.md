@@ -6,7 +6,7 @@ Mikihiro Ikura, Cedric Le Gentil, Marcus G. Müller, Florian Schuler, Atsushi Ya
 
 ## ros packages lists
 - event_array_msgs
-  - Definitions for ROS messages created by SilkyEvCam
+  - Definitions for ROS messages created for SilkyEvCam
 - gen_seeds
   - Publish seeds from text file to haste
 - haste_ros

@@ -27,4 +27,5 @@ jobs:
         run: docker compose version
 
       - name: Build RATE with docker compose
+        if: ${{ contains(github.event.pull_request.changed_files, 'Dockerfile') }}
         run: docker compose build rate
