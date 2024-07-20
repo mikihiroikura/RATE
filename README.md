@@ -23,6 +23,10 @@ Mikihiro Ikura, Cedric Le Gentil, Marcus G. Müller, Florian Schuler, Atsushi Ya
 - libcaer
 
 ## Before starting to run
+### Update submodule
+```
+git submodule update --init --recursive
+```
 ### Build docker image
 ```
 docker build -t rate:latest .
