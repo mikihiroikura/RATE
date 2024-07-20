@@ -57,7 +57,7 @@ xhost local:docker
 ```
 roslaunch haste_ros haste_fd_timeslice_sae.launch event_topic:=/dvs/events camera_size:=240x180 camera_calib:=/root/catkin_ws/src/haste_ros/haste/dataset/calib.txt
 ```
-2nd terminal (in host if you have ros environment locally/ otherwise in docker container)
+2nd terminal (in host if you have ros environment locally / otherwise in docker container)
 ```
 rosbag play boxes_6dof.bag
 ```
