@@ -12,5 +12,5 @@ services:
       - DISPLAY=${DISPLAY}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - /home/m-ikura/Github/SilkyEvCam/rosbag/:/app/rosbag
+      - /home/mikura-iit.local/data/rosbag/:/app/rosbag # Mount rosbag files into docker container
     command: sleep infinity
