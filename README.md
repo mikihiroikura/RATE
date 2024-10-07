@@ -57,8 +57,13 @@ xhost local:docker
 ## How to run RATE, continuous feature detection and tracking with event rosbag data
 1st terminal (in docker container)
 ```
-roslaunch haste_ros haste_fd_timeslice_sae.launch event_topic:=/dvs/events camera_size:=240x180 camera_calib:=/home/rate/catkin_ws/src/haste_ros/haste/dataset/calib.txt
+roslaunch haste_ros haste_fd_timeslice_sae.launch event_topic:=/dvs/events camera_size:=240x180 camera_calib:=/home/rate/catkin_ws/src/haste_ros/haste/dataset/calib.txt best_tracker:=alignment_score
 ```
+- `best_tracker`: Argument to determine the best tracker
+  - `alignment_score`: the tracker with the highest alignment score
+  - `lifespan`: the tracker with the longest lifespan
+  - `hybrid`: the tracker with higher alignment score and longer lifespan
+
 2nd terminal (in host if you have ros environment locally / otherwise in docker container)
 ```
 rosbag play boxes_6dof.bag
