@@ -11,6 +11,13 @@ jobs:
   rate-docker-build:
     runs-on: ubuntu-latest
     steps:
+      - name: Filter for Dockerfile changes
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            dockerfile:
+              - 'Dockerfile'
 
       - name: Checkout (GitHub)
         uses: actions/checkout@v3
@@ -27,5 +34,5 @@ jobs:
         run: docker compose version
 
       - name: Build RATE with docker compose
-        if: ${{ contains(github.event.pull_request.changed_files, 'Dockerfile') }}
+        if: steps.filter.outputs.dockerfile == 'true'
         run: docker compose build rate
