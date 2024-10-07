@@ -4,7 +4,7 @@ This repo is for event-based continuous corner detection and tracking described 
 
 Mikihiro Ikura, Cedric Le Gentil, Marcus G. Müller, Florian Schuler, Atsushi Yamashita and Wolfgang Stürzl: "RATE: Real-time Asynchronous Feature Tracking with Event Cameras", Proceedings of the 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS2024), Abu Dhabi (UAE), October 2024.
 
-https://github.com/user-attachments/assets/0193ed3e-c46c-4032-b342-4f5a6933ac20
+https://github.com/user-attachments/assets/6a164201-4383-4537-b3a5-40d049043c34
 
 ## ros packages lists
 - event_array_msgs
