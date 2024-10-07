@@ -11,6 +11,7 @@ struct MultipleTracker
     unsigned int tracker_id;
     uint16_t position_id;
     HasteTracker tracker;
+    double track_start_time;
 };
 
 HasteTracker haste_tracker;
@@ -28,7 +29,7 @@ ros::Publisher haste_pub;
 std_msgs::Float32MultiArray haste_result;
 bool finishTracking = false;
 bool poschange_flg = false;
-std::string camera_size, seed_data, camera_calib;
+std::string camera_size, seed_data, camera_calib, best_tracker;
 unsigned int tracker_id_cnt = 1;
 uint16_t position_id_old = 0, position_id_tmp = 0, position_id_tmp_seed = 0, position_id_read_seed = 0;
 uint16_t subimage_size = 30;
@@ -38,6 +39,7 @@ unsigned int num_distribution, max_duplication = 9;
 int distribution_cnt = 0, distribution_cnt_addseed = 0, max_hypothesis_score_itr_dist_subimg = 0;
 float max_hypothesis_score = 0;
 float bad_tracking_threshold;
+float timestamp, tracking_duration_time = 0;
 
 template<typename A, size_t N, typename T>
 void fillArray(A (&array)[N], const T &val){
@@ -54,6 +56,16 @@ uint16_t ReadSeed(std::string seed_data){
     position_id_read_seed = static_cast<uint16_t>(y / subimage_size) * static_cast<uint16_t>(camera.width / subimage_size) + static_cast<uint16_t>(x / subimage_size);
     return position_id_read_seed;
 }
+
+double ReadTimestamp(std::string seed_data){
+    auto seed_str = haste::splitString(seed_data, ',');
+    if (seed_str.size() != 5){
+        LOG(FATAL) << "Read Seed: Unexpected number of tokens.";
+    }
+    auto t = (double) std::stod(seed_str[0]);
+    return t;
+}
+
 
 void EventMsgCallback(const dvs_msgs::EventArray::ConstPtr &event_msg){
     const int n_event = event_msg->events.size();
@@ -94,7 +106,6 @@ void EventMsgCallback(const dvs_msgs::EventArray::ConstPtr &event_msg){
                     }
                     // Check hypothesis score and evaluate if tracking fails
                     bad_tracking_threshold = (tracker->max_hypothesis_score() - tracker->min_hypothesis_score()) / tracker->max_hypothesis_score();
-                    // ROS_INFO("Threshold: %f, max: %f, min: %f", bad_tracking_threshold, tracker->max_hypothesis_score(), tracker->min_hypothesis_score());
                     if (bad_tracking_threshold < 0.1){
                         ROS_INFO("Tracking failure... Tracker ID: %d, threshold: %f", haste_trackers[itr_haste].tracker_id, bad_tracking_threshold);
                         haste_trackers[itr_haste] = haste_trackers.back();
@@ -104,7 +115,7 @@ void EventMsgCallback(const dvs_msgs::EventArray::ConstPtr &event_msg){
                         continue;
                     }
                 }
-                ROS_INFO("Tracker ID: %d, Position ID: %d, state updated to: {t=%lf, x=%.0lf, y=%.0lf, theta=%lf}", haste_trackers[itr_haste].tracker_id, haste_trackers[itr_haste].position_id, tracker->t(), tracker->x(), tracker->y(), tracker->theta());
+                ROS_INFO("Tracker ID: %d, Position ID: %d, Tracking_time: %lf, state updated to: {t=%lf, x=%.0lf, y=%.0lf, theta=%lf}", haste_trackers[itr_haste].tracker_id, haste_trackers[itr_haste].position_id, tracker->t() - haste_trackers[itr_haste].track_start_time, tracker->t(), tracker->x(), tracker->y(), tracker->theta());
                 haste_result.data[0] = haste_trackers[itr_haste].tracker_id; // ID
                 haste_result.data[1] = tracker->t();    // Time
                 haste_result.data[2] = tracker->x();    // x
@@ -125,7 +136,6 @@ void EventMsgCallback(const dvs_msgs::EventArray::ConstPtr &event_msg){
                         }
                     }
                     // Delete tracker
-                    // haste_trackers.erase(haste_trackers.begin() + itr_haste);
                     haste_trackers[itr_haste] = haste_trackers.back();
                     haste_trackers.pop_back();
                     itr_haste--;
@@ -151,41 +161,107 @@ void EventMsgCallback(const dvs_msgs::EventArray::ConstPtr &event_msg){
                         if (tracker_distribution[itr_dist][itr_dist_subimg] != 0){
                             // Delete tracker
                             for (int itr_haste = 0; itr_haste < haste_trackers.size(); itr_haste++){
-                                // ROS_INFO("Haste tracker Hypothesis score");
-                                // haste_trackers[itr_haste].tracker.returnTracker()->show_hypothesis_score();
-                                // ROS_INFO("Max hypothesis score %f", haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score());
                                 if (haste_trackers[itr_haste].tracker_id == tracker_distribution[itr_dist][itr_dist_subimg]){
-                                    if (max_hypothesis_score != 0 && max_hypothesis_score > haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score()){
-                                        // Erase current haste_tracker
-                                        haste_trackers[itr_haste] = haste_trackers.back();
-                                        haste_trackers.pop_back();
-                                        // Delete distribution
-                                        tracker_distribution[itr_dist][itr_dist_subimg] = 0;
-                                        break;
-                                    }
-                                    else if (max_hypothesis_score != 0 && haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score() >= max_hypothesis_score){
-                                        // ROS_INFO("New score: %f ID %d, Max score: %f ID %d", haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score(), itr_haste, max_hypothesis_score, max_hypothesis_score_itr_dist_subimg);
-                                        // Erase old haste tracker
-                                        for (int itr_haste_j = 0; itr_haste_j < haste_trackers.size(); itr_haste_j++){
-                                            if (haste_trackers[itr_haste_j].tracker_id == tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg]){
-                                                haste_trackers[itr_haste_j] = haste_trackers.back();
-                                                haste_trackers.pop_back();
-                                                break;
-                                            }
+                                    // Highest alignment score
+                                    if (best_tracker == "alignment_score" || (best_tracker != "lifespan" && best_tracker != "hybrid")) {
+                                        if (max_hypothesis_score != 0 && max_hypothesis_score > haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score()){
+                                            // Erase current haste_tracker
+                                            haste_trackers[itr_haste] = haste_trackers.back();
+                                            haste_trackers.pop_back();
+                                            // Delete distribution
+                                            tracker_distribution[itr_dist][itr_dist_subimg] = 0;
+                                            break;
                                         }
-                                        // Delete distribution
-                                        tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg] = 0;
-                                        // Update max hypothesis score and its iteration
-                                        max_hypothesis_score = haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score();
-                                        max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
-                                        break;
+                                        else if (max_hypothesis_score != 0 && haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score() >= max_hypothesis_score){
+                                            // Erase old haste tracker
+                                            for (int itr_haste_j = 0; itr_haste_j < haste_trackers.size(); itr_haste_j++){
+                                                if (haste_trackers[itr_haste_j].tracker_id == tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg]){
+                                                    haste_trackers[itr_haste_j] = haste_trackers.back();
+                                                    haste_trackers.pop_back();
+                                                    break;
+                                                }
+                                            }
+                                            // Delete distribution
+                                            tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg] = 0;
+                                            // Update max hypothesis score and its iteration
+                                            max_hypothesis_score = haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score();
+                                            max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
+                                            break;
+                                        }
+                                        else{
+                                            // Update max hypothesis score and its iteration
+                                            max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
+                                            max_hypothesis_score = haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score();
+                                        }
                                     }
-                                    else{// max_hypotesis_score == 0
-                                        // Update max hypothesis score and its iteration
-                                        max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
-                                        max_hypothesis_score = haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score();
+                                    // Longest lifespan
+                                    else if (best_tracker == "lifespan") {
+                                        auto tracker = haste_trackers[itr_haste].tracker.returnTracker();
+                                        tracking_duration_time = tracker->t() - haste_trackers[itr_haste].track_start_time;
+                                        if (max_hypothesis_score != 0 && max_hypothesis_score > (float)tracking_duration_time){
+                                            // Erase current haste_tracker
+                                            haste_trackers[itr_haste] = haste_trackers.back();
+                                            haste_trackers.pop_back();
+                                            // Delete distribution
+                                            tracker_distribution[itr_dist][itr_dist_subimg] = 0;
+                                            break;
+                                        }
+                                        else if (max_hypothesis_score != 0 && (float)tracking_duration_time >= max_hypothesis_score){
+                                            // Erase old haste tracker
+                                            for (int itr_haste_j = 0; itr_haste_j < haste_trackers.size(); itr_haste_j++){
+                                                if (haste_trackers[itr_haste_j].tracker_id == tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg]){
+                                                    haste_trackers[itr_haste_j] = haste_trackers.back();
+                                                    haste_trackers.pop_back();
+                                                    break;
+                                                }
+                                            }
+                                            // Delete distribution
+                                            tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg] = 0;
+                                            // Update max hypothesis score and its iteration
+                                            max_hypothesis_score = (float)tracking_duration_time;
+                                            max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
+                                            break;
+                                        }
+                                        else{
+                                            // Update max hypothesis score and its iteration
+                                            max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
+                                            max_hypothesis_score = (float)tracking_duration_time;
+                                        }
                                     }
-
+                                    // Hybrid = Higher alignment score and longer lifespan
+                                    else if (best_tracker == "hybrid") {
+                                        auto tracker = haste_trackers[itr_haste].tracker.returnTracker();
+                                        tracking_duration_time = tracker->t() - haste_trackers[itr_haste].track_start_time;
+                                        if (max_hypothesis_score != 0 && max_hypothesis_score > haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score() * (float)tracking_duration_time){
+                                            // Erase current haste_tracker
+                                            haste_trackers[itr_haste] = haste_trackers.back();
+                                            haste_trackers.pop_back();
+                                            // Delete distribution
+                                            tracker_distribution[itr_dist][itr_dist_subimg] = 0;
+                                            break;
+                                        }
+                                        else if (max_hypothesis_score != 0 && haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score() * (float)tracking_duration_time >= max_hypothesis_score){
+                                            // Erase old haste tracker
+                                            for (int itr_haste_j = 0; itr_haste_j < haste_trackers.size(); itr_haste_j++){
+                                                if (haste_trackers[itr_haste_j].tracker_id == tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg]){
+                                                    haste_trackers[itr_haste_j] = haste_trackers.back();
+                                                    haste_trackers.pop_back();
+                                                    break;
+                                                }
+                                            }
+                                            // Delete distribution
+                                            tracker_distribution[itr_dist][max_hypothesis_score_itr_dist_subimg] = 0;
+                                            // Update max hypothesis score and its iteration
+                                            max_hypothesis_score = haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score() * (float)tracking_duration_time;
+                                            max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
+                                            break;
+                                        }
+                                        else{
+                                            // Update max hypothesis score and its iteration
+                                            max_hypothesis_score_itr_dist_subimg = itr_dist_subimg;
+                                            max_hypothesis_score = haste_trackers[itr_haste].tracker.returnTracker()->max_hypothesis_score() * (float)tracking_duration_time;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -199,7 +275,7 @@ void EventMsgCallback(const dvs_msgs::EventArray::ConstPtr &event_msg){
 void SeedMsgCallback(const std_msgs::String::ConstPtr& seed_msg){
     seed_data = seed_msg->data;
     position_id_tmp_seed = ReadSeed(seed_data);
-    // ROS_INFO("Receive seed: %s, position_id: %d", seed_data.c_str(), position_id_tmp_seed);
+    timestamp = ReadTimestamp(seed_data);
     // Add new seed when no seed is in subimage
     distribution_cnt_addseed = 0;
     for (int itr_dist_subimg = 0; itr_dist_subimg < max_duplication; itr_dist_subimg++){
@@ -214,21 +290,12 @@ void SeedMsgCallback(const std_msgs::String::ConstPtr& seed_msg){
         multiTracker.tracker = haste_tracker;
         multiTracker.tracker_id = tracker_id_cnt;
         multiTracker.position_id = position_id_tmp_seed;
+        multiTracker.track_start_time = timestamp;
         haste_trackers.emplace_back(multiTracker);
 
         // Add distribution
         tracker_distribution[position_id_tmp_seed][0] = tracker_id_cnt;
-        //ROS_INFO("Add seed position id: %d, tracker id: %d", multiTracker.position_id, tracker_id_cnt);
         tracker_id_cnt++;
-        // ROS_INFO("[Num of Tracker] %d", haste_trackers.size());
-        // for (int i = 0; i < num_distribution; i++){
-        //     for (int j = 0; j < max_duplication; j++){
-        //         ROS_INFO("distribution[%d][%d]: %d", i, j, tracker_distribution[i][j]);
-        //     }
-        // }
-        // for (int i = 0; i < haste_trackers.size(); i++){
-        //     ROS_INFO("haste_tracker %d: posID: %d, trackerID: %d", i, haste_trackers[i].position_id, haste_trackers[i].tracker_id);
-        // }
     }
 }
 
@@ -240,6 +307,7 @@ int main(int argc, char **argv){
     nh.getParam("/haste_ros/camerasize", camera_size);
     nh.getParam("/haste_ros/seed_data", seed_data);
     nh.getParam("/haste_ros/calib_file", camera_calib);
+    nh.getParam("/haste_ros/best_tracker_func", best_tracker);
     haste_tracker = HasteTracker(camera_size, seed_data, camera_calib);
     camera = haste_tracker.returnCamera();
 
@@ -250,7 +318,6 @@ int main(int argc, char **argv){
     for (int i = 0; i < num_distribution; i++){
         tracker_distribution[i] = base_tracker_distribution + i * max_duplication;
     }
-    // fillArray(base_tracker_distribution, 0);
     for (int i = 0; i < num_distribution; i++) {
         for (int j = 0; j < max_duplication; j++) {
             tracker_distribution[i][j] = 0;

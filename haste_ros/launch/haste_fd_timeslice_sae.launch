@@ -3,6 +3,7 @@
   <arg name="camera_size" default='240x180'/>
   <arg name="camera_calib" default='/root/src/haste/dataset/calib.txt'/>
   <arg name="seed" default='0.6,125.0,52.0,0.0,0'/>
+  <arg name="best_tracker" default='alignment_score'/>
 
   <!-- feature detection with time slice of SAE -->
   <node name="ev_feature_detection" pkg="my_events" type="ev_feature_detection" output="screen">
@@ -25,6 +26,7 @@
     <param name="camerasize" value="$(arg camera_size)" />
     <param name="calib_file" value="$(arg camera_calib)" />
     <param name="seed_data" value="$(arg seed)" />
+    <param name="best_tracker_func" value="$(arg best_tracker)" />
   </node>
 
   <!-- visualization events -->
